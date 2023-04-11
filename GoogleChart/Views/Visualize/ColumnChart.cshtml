@@ -1,0 +1,74 @@
+﻿<head>
+    <title>Students Result</title>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $.ajax({
+                type: "Post",
+                dataType: "json",
+                url: "@Url.Action("VisualizeStudentResult", "Visualize")",
+                success: function(studentResults) {
+                    google.charts.load('current', {
+                        'packages': ['corechart']
+                    });
+                    google.charts.setOnLoadCallback(function () {
+                        drawChart(studentResults);
+                    });
+                }
+            });
+        });
+        function drawChart(result) {
+            var data = new google.visualization.DataTable();
+            data.addColumn('string', 'Name');
+            data.addColumn('number', 'Marks Obtained');
+            data.addColumn({ type: 'string', role: 'style' });
+
+            var dataArray = [];
+            var failCount = 0;
+            $.each(result, function (i, obj) {
+                var color = obj.markObtained < 70 ? 'color: red' : '';
+                var tooltip = obj.markObtained < 70 ? 'Fail' : 'Pass';
+                if (obj.markObtained < 70) {
+                    failCount++;
+                }
+                dataArray.push([obj.studentName, obj.markObtained, color]);
+            });
+            data.addRows(dataArray);
+
+            var columnChartOptions = {
+                title: "Student Performance",
+                width: 1000,
+                height: 400,
+                bar: { groupWidth: "20%" },
+                tooltip: { isHtml: true },
+            };
+
+            var columnChart = new google.visualization.ColumnChart(document.getElementById('columnchart_div'));
+
+            google.visualization.events.addListener(columnChart, 'ready', function () {
+                $('rect[style*="color: red"]').each(function (index, element) {
+                    $(element).attr('title', 'Fail');
+                });
+            });
+
+            columnChart.draw(data, columnChartOptions);
+
+            // Update the pass/fail description element
+            var passFailDescription = document.getElementById('pass-fail-description');
+            if (failCount > 0) {
+                passFailDescription.innerHTML = failCount + " students failed the exam";
+                passFailDescription.style.color = "red";
+            } else {
+                passFailDescription.innerHTML = "All students passed the exam";
+                passFailDescription.style.color = "green";
+            }
+        }
+
+    </script>
+</head>
+<body>
+    <div id="columnchart_div"></div>
+    <div id="pass-fail-description"></div>
+</body>
